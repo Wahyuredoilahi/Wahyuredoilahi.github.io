@@ -1,0 +1,47 @@
+import json
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import base64
+
+def generate_aes_key():
+    return get_random_bytes(32)
+
+def aes_encrypt(data, key):
+    cipher = AES.new(key, AES.MODE_CTR)
+    ciphertext = cipher.encrypt(data.encode())
+    return ciphertext
+
+def aes_decrypt(ciphertext, key):
+    cipher = AES.new(key, AES.MODE_CTR)
+    decrypted_data = cipher.decrypt(ciphertext).decode()
+    return decrypted_data
+
+def base64_encode(data):
+    return base64.b64encode(data).decode()
+
+def base64_decode(encoded_data):
+    return base64.b64decode(encoded_data)
+
+def add_watermark(data, watermark):
+    encrypted_data = aes_encrypt(data, watermark)
+    encoded_data = base64_encode(encrypted_data)
+    return encoded_data
+
+def remove_watermark(encoded_data, watermark):
+    decoded_data = base64_decode(encoded_data)
+    decrypted_data = aes_decrypt(decoded_data, watermark)
+    return decrypted_data
+
+# Contoh penggunaan
+json_data = {"name": "John Doe", "age": 30, "city": "Example City"}
+
+# Membuat kunci AES
+aes_key = generate_aes_key()
+
+# Menambahkan watermark dan mengenkripsi JSON data
+encrypted_data = add_watermark(json.dumps(json_data), aes_key)
+print("Encrypted and Watermarked Data:", encrypted_data)
+
+# Menghapus watermark dan mendekripsi data
+decrypted_data = remove_watermark(encrypted_data, aes_key)
+print("Decrypted Data:", decrypted_data)

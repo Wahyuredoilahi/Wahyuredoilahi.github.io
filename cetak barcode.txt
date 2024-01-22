@@ -1,0 +1,63 @@
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+import hashlib
+import base64
+
+def encrypt_aes_ocb(data, key):
+    cipher = AES.new(key, AES.MODE_OCB)
+    ciphertext, tag = cipher.encrypt_and_digest(data)
+    return ciphertext + tag
+
+def decrypt_aes_ocb(ciphertext, key):
+    cipher = AES.new(key, AES.MODE_OCB)
+    data = cipher.decrypt_and_verify(ciphertext[:-16], ciphertext[-16:])
+    return data
+
+def generate_barcode(nomor_pengiriman, tanggal_kirim, kode_cabang):
+    # Konkatenasi data
+    data_to_encrypt = f"{nomor_pengiriman}-{tanggal_kirim}-{kode_cabang}".encode('utf-8')
+
+    # Generate kunci untuk AES 256
+    key = get_random_bytes(32)
+
+    # Enkripsi menggunakan AES 256 OCB
+    encrypted_data = encrypt_aes_ocb(data_to_encrypt, key)
+
+    # Hash SHA-1 dari kunci AES
+    key_hash = hashlib.sha1(key).digest()
+
+    # Konkatenasi data terenkripsi dan hash kunci, lalu encode Base64
+    barcode = base64.b64encode(encrypted_data + key_hash).decode()
+
+    return barcode
+
+def decode_barcode(barcode):
+    # Decode Base64
+    decoded_data = base64.b64decode(barcode)
+
+    # Ambil data terenkripsi dan hash kunci
+    encrypted_data = decoded_data[:-20]
+    key_hash = decoded_data[-20:]
+
+    # Verifikasi kunci dengan SHA-1
+    key = hashlib.sha1(key_hash).digest()
+
+    # Dekripsi data menggunakan AES 256 OCB
+    decrypted_data = decrypt_aes_ocb(encrypted_data, key)
+
+    # Decode utf-8 dan split data menjadi Nomor Pengiriman, Tanggal Kirim, dan Kode Cabang
+    nomor_pengiriman, tanggal_kirim, kode_cabang = decrypted_data.decode('utf-8').split('-')
+
+    return nomor_pengiriman, tanggal_kirim, kode_cabang
+
+if __name__ == "__main__":
+    nomor_pengiriman = "12345"
+    tanggal_kirim = "20220122"
+    kode_cabang = "ABC"
+
+    barcode = generate_barcode(nomor_pengiriman, tanggal_kirim, kode_cabang)
+    print("Generated Barcode:", barcode)
+
+    decoded_data = decode_barcode(barcode)
+    print("Decoded Data:", decoded_data)

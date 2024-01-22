@@ -1,0 +1,23 @@
+import random
+import base64
+
+def generate_random_string(length):
+    characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    random_string = ''.join(random.choice(characters) for i in range(length))
+    return random_string
+
+def generate_captcha():
+    # Generate random string using PRNG
+    random_string = generate_random_string(20)
+
+    # Encode the random string using Base64
+    encoded_string = base64.b64encode(random_string.encode()).decode()
+
+    # Cut the first 10 characters from the left
+    captcha = encoded_string[:10]
+
+    return captcha
+
+if __name__ == "__main__":
+    captcha_code = generate_captcha()
+    print("Captcha Code:", captcha_code)
